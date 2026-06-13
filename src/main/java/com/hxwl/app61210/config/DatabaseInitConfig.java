@@ -32,11 +32,27 @@ public class DatabaseInitConfig {
                 CREATE TABLE IF NOT EXISTS inspections (
                     id IDENTITY PRIMARY KEY,
                     exhibit_id BIGINT NOT NULL,
+                    inspector_id BIGINT,
                     inspected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     environment_note VARCHAR(500) DEFAULT '',
                     appearance_status VARCHAR(80) NOT NULL,
                     action_note VARCHAR(500) DEFAULT '',
                     abnormal BOOLEAN NOT NULL DEFAULT FALSE
+                )
+                """);
+            jdbc.execute("""
+                ALTER TABLE inspections
+                ADD COLUMN IF NOT EXISTS inspector_id BIGINT
+                """);
+            jdbc.execute("""
+                CREATE TABLE IF NOT EXISTS inspectors (
+                    id IDENTITY PRIMARY KEY,
+                    name VARCHAR(50) NOT NULL,
+                    phone VARCHAR(20) DEFAULT '',
+                    responsible_zone VARCHAR(255) DEFAULT '',
+                    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """);
         };

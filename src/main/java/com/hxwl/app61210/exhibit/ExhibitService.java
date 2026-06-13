@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.hxwl.app61210.exhibit.dto.ExhibitCreate;
 import com.hxwl.app61210.exhibit.dto.InspectionCreate;
+import com.hxwl.app61210.inspector.InspectorService;
 import com.hxwl.app61210.zone.ZoneService;
 
 @Service
@@ -14,10 +15,16 @@ public class ExhibitService {
 
     private final ExhibitRepository exhibitRepository;
     private final ZoneService zoneService;
+    private final InspectorService inspectorService;
 
-    public ExhibitService(ExhibitRepository exhibitRepository, ZoneService zoneService) {
+    public ExhibitService(
+        ExhibitRepository exhibitRepository,
+        ZoneService zoneService,
+        InspectorService inspectorService
+    ) {
         this.exhibitRepository = exhibitRepository;
         this.zoneService = zoneService;
+        this.inspectorService = inspectorService;
     }
 
     public Map<String, Object> createExhibit(ExhibitCreate body) {
@@ -49,6 +56,9 @@ public class ExhibitService {
         }
         if (body.appearanceStatus() == null || body.appearanceStatus().isBlank()) {
             throw new IllegalArgumentException("外观状态不能为空");
+        }
+        if (body.inspectorId() != null && !inspectorService.isEnabledInspector(body.inspectorId())) {
+            throw new IllegalArgumentException("巡检人员不存在或未启用: id=" + body.inspectorId());
         }
         return exhibitRepository.addInspection(exhibitId, body);
     }

@@ -12,6 +12,8 @@ public interface InspectorService {
 
     Inspector getById(Long id);
 
+    boolean isEnabledInspector(Long id);
+
     List<Inspector> list(String name, String phone, String responsibleZone, Integer enabled);
 
     List<Inspector> listAllEnabled();

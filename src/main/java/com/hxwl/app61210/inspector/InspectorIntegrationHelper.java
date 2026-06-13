@@ -74,7 +74,6 @@ public class InspectorIntegrationHelper {
         if (inspectorId == null) {
             return true;
         }
-        Inspector inspector = inspectorService.getById(inspectorId);
-        return inspector != null && inspector.getEnabled() != null && inspector.getEnabled() == 1;
+        return inspectorService.isEnabledInspector(inspectorId);
     }
 }

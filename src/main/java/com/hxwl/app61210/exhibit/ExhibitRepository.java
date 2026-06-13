@@ -1,5 +1,6 @@
 package com.hxwl.app61210.exhibit;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,16 +39,17 @@ public class ExhibitRepository {
             var ps = con.prepareStatement(
                 """
                 INSERT INTO inspections
-                (exhibit_id, environment_note, appearance_status, action_note, abnormal)
-                VALUES (?, ?, ?, ?, ?)
+                (exhibit_id, inspector_id, environment_note, appearance_status, action_note, abnormal)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 new String[]{"id"}
             );
             ps.setLong(1, exhibitId);
-            ps.setString(2, body.environmentNote());
-            ps.setString(3, body.appearanceStatus());
-            ps.setString(4, body.actionNote());
-            ps.setBoolean(5, body.abnormal());
+            ps.setObject(2, body.inspectorId());
+            ps.setString(3, body.environmentNote());
+            ps.setString(4, body.appearanceStatus());
+            ps.setString(5, body.actionNote());
+            ps.setBoolean(6, body.abnormal());
             return ps;
         }, keyHolder);
 
@@ -58,26 +60,53 @@ public class ExhibitRepository {
         );
 
         Long inspectionId = keyHolder.getKey().longValue();
-        return jdbc.queryForMap("SELECT * FROM inspections WHERE id = ?", inspectionId);
+        return withInspector(jdbc.queryForMap(
+            """
+            SELECT i.*,
+                   ins.id AS "inspectorInfoId",
+                   ins.name AS "inspectorName",
+                   ins.phone AS "inspectorPhone",
+                   ins.responsible_zone AS "inspectorResponsibleZone"
+            FROM inspections i
+            LEFT JOIN inspectors ins ON ins.id = i.inspector_id
+            WHERE i.id = ?
+            """,
+            inspectionId
+        ));
     }
 
     public List<Map<String, Object>> findInspectionsByExhibitId(long exhibitId) {
         return jdbc.queryForList(
-            "SELECT * FROM inspections WHERE exhibit_id = ? ORDER BY inspected_at DESC, id DESC",
+            """
+            SELECT i.*,
+                   ins.id AS "inspectorInfoId",
+                   ins.name AS "inspectorName",
+                   ins.phone AS "inspectorPhone",
+                   ins.responsible_zone AS "inspectorResponsibleZone"
+            FROM inspections i
+            LEFT JOIN inspectors ins ON ins.id = i.inspector_id
+            WHERE i.exhibit_id = ?
+            ORDER BY i.inspected_at DESC, i.id DESC
+            """,
             exhibitId
-        );
+        ).stream().map(this::withInspector).toList();
     }
 
     public List<Map<String, Object>> findLatestAbnormal() {
         return jdbc.queryForList(
             """
-            SELECT e.code, e.name, e.zone, e.owner, i.*
+            SELECT e.code, e.name, e.zone, e.owner, i.*,
+                   ins.id AS "inspectorInfoId",
+                   ins.name AS "inspectorName",
+                   ins.phone AS "inspectorPhone",
+                   ins.responsible_zone AS "inspectorResponsibleZone"
             FROM inspections i
             JOIN exhibits e ON e.id = i.exhibit_id
+            LEFT JOIN inspectors ins ON ins.id = i.inspector_id
             WHERE i.abnormal = TRUE
             ORDER BY i.inspected_at DESC, i.id DESC
             """
-        );
+        ).stream().map(this::withInspector).toList();
     }
 
     public boolean existsById(long id) {
@@ -87,5 +116,24 @@ public class ExhibitRepository {
             id
         );
         return count != null && count > 0;
+    }
+
+    private Map<String, Object> withInspector(Map<String, Object> row) {
+        Map<String, Object> result = new LinkedHashMap<>(row);
+        Object inspectorId = result.remove("inspectorInfoId");
+        Object inspectorName = result.remove("inspectorName");
+        Object inspectorPhone = result.remove("inspectorPhone");
+        Object inspectorResponsibleZone = result.remove("inspectorResponsibleZone");
+        if (inspectorId == null) {
+            result.put("inspector", null);
+            return result;
+        }
+        Map<String, Object> inspector = new LinkedHashMap<>();
+        inspector.put("id", ((Number) inspectorId).longValue());
+        inspector.put("name", inspectorName);
+        inspector.put("phone", inspectorPhone);
+        inspector.put("responsibleZone", inspectorResponsibleZone);
+        result.put("inspector", inspector);
+        return result;
     }
 }
