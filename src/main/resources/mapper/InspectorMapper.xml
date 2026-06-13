@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hxwl.app61210.inspector.InspectorMapper">
+
+    <resultMap id="BaseResultMap" type="com.hxwl.app61210.inspector.Inspector">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="phone" property="phone"/>
+        <result column="responsible_zone" property="responsibleZone"/>
+        <result column="enabled" property="enabled"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, phone, responsible_zone, enabled, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="com.hxwl.app61210.inspector.Inspector" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inspector (name, phone, responsible_zone, enabled, create_time, update_time)
+        VALUES (#{name}, #{phone}, #{responsibleZone}, #{enabled},
+                #{createTime, jdbcType=TIMESTAMP}, #{updateTime, jdbcType=TIMESTAMP})
+    </insert>
+
+    <update id="updateById" parameterType="com.hxwl.app61210.inspector.Inspector">
+        UPDATE inspector
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="responsibleZone != null">responsible_zone = #{responsibleZone},</if>
+            <if test="enabled != null">enabled = #{enabled},</if>
+            update_time = #{updateTime, jdbcType=TIMESTAMP}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM inspector WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM inspector
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM inspector
+        <where>
+            <if test="name != null and name != ''">AND name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="phone != null and phone != ''">AND phone LIKE CONCAT('%', #{phone}, '%')</if>
+            <if test="responsibleZone != null and responsibleZone != ''">AND responsible_zone LIKE CONCAT('%', #{responsibleZone}, '%')</if>
+            <if test="enabled != null">AND enabled = #{enabled}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectAllEnabled" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM inspector
+        WHERE enabled = 1
+        ORDER BY name ASC
+    </select>
+
+</mapper>
